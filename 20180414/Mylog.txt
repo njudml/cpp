@@ -1,0 +1,64 @@
+2018-04-15 21:08:01,374:WARN  log warn
+111	main	Mylog.cc
+2018-04-15 21:08:01,375:WARN  log error
+112	main	Mylog.cc
+2018-04-15 21:08:01,375:WARN  log debug
+113	main	Mylog.cc
+2018-04-15 21:08:01,376:WARN  log info
+114	main	Mylog.cc
+2018-04-15 21:08:03,038:WARN  log warn
+111	main	Mylog.cc
+2018-04-15 21:08:03,039:WARN  log error
+112	main	Mylog.cc
+2018-04-15 21:08:03,040:WARN  log debug
+113	main	Mylog.cc
+2018-04-15 21:08:03,041:WARN  log info
+114	main	Mylog.cc
+2018-04-15 21:09:53,704:WARN  log warn
+111	main	Mylog.cc
+2018-04-15 21:09:53,706:WARN  log error
+112	main	Mylog.cc
+2018-04-15 21:09:53,707:WARN  log debug
+113	main	Mylog.cc
+2018-04-15 21:09:53,707:WARN  log info
+114	main	Mylog.cc
+2018-04-15 21:10:59,649:WARN  log warn
+111	main	Mylog.cc
+2018-04-15 21:10:59,650:WARN  log error
+112	main	Mylog.cc
+2018-04-15 21:10:59,651:WARN  log debug
+113	main	Mylog.cc
+2018-04-15 21:10:59,652:WARN  log info
+114	main	Mylog.cc
+2018-04-15 21:12:05,915:WARN  log warn
+111	main	Mylog.cc
+2018-04-15 21:12:05,916:WARN  log error
+112	main	Mylog.cc
+2018-04-15 21:12:05,916:WARN  log debug
+113	main	Mylog.cc
+2018-04-15 21:12:05,917:WARN  log info
+114	main	Mylog.cc
+2018-04-15 22:08:08,555:WARN  log warn
+111	main	Mylog.cc
+2018-04-15 22:08:08,556:WARN  log error
+112	main	Mylog.cc
+2018-04-15 22:08:08,557:WARN  log debug
+113	main	Mylog.cc
+2018-04-15 22:08:08,557:WARN  log info
+114	main	Mylog.cc
+2018-04-15 22:09:24,564:WARN  log warn
+111	main	Mylog.cc
+2018-04-15 22:09:24,565:ERROR  log error
+112	main	Mylog.cc
+2018-04-15 22:09:24,566:DEBUG  log debug
+113	main	Mylog.cc
+2018-04-15 22:09:24,566:INFO  log info
+114	main	Mylog.cc
+2018-04-15 22:19:14,940:WARN  log warn
+114	main	Mylog.cc
+2018-04-15 22:19:14,941:ERROR  log error
+115	main	Mylog.cc
+2018-04-15 22:19:14,942:DEBUG  log debug
+116	main	Mylog.cc
+2018-04-15 22:19:14,943:INFO  log info
+117	main	Mylog.cc
