@@ -6,7 +6,7 @@ Condition c;
 Mutexlock m;
 void * func(void *p)
 {
-    c.lock();
+//    c.lock();
     c.wait();
     printf("hello\n");
     sleep(3);
@@ -15,7 +15,7 @@ void * func(void *p)
 
 void * func1(void *p)
 {
-    c.lock();
+   // c.lock();
     c.wait();
     printf("hello\n");
     sleep(3);

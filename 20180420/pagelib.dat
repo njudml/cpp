@@ -1,0 +1,2000 @@
+<doc>
+    <docid>1</docid>
+    <title>如何重构“箭头型”代码</title>
+    <link>http://coolshell.cn/articles/17757.html</link>
+    <description>本文主要起因是，一次在微博上和朋友关于嵌套好几层的if-else语句的代码重构的讨论（微博原文），在微博上大家有各式各样的问题和想法。按道理来说这些都是编程的基...</description>
+    <content>
+
+
+
+
+
+
+
+
+
+
+
+
+FOREACH(Ptr&amp;lt;WfExpression&amp;gt;, argument, node-&amp;gt;arguments) {
+    int index = manager-&amp;gt;expressionResolvings.Keys().IndexOf(argument.Obj());
+    if (index != -1) {
+        auto type = manager-&amp;gt;expressionResolvings.Values()[index].type;
+        if (! types.Contains(type.Obj())) {
+            types.Add(type.Obj());
+            if (auto group = type-&amp;gt;GetTypeDescriptor()-&amp;gt;GetMethodGroupByName(L&amp;quot;CastResult&amp;quot;, true)) {
+                int count = group-&amp;gt;GetMethodCount();
+                for (int i = 0; i &amp;lt; count; i++) { auto method = group-&amp;gt;GetMethod(i);
+                    if (method-&amp;gt;IsStatic()) {
+                        if (method-&amp;gt;GetParameterCount() == 1 &amp;amp;&amp;amp;
+                            method-&amp;gt;GetParameter(0)-&amp;gt;GetType()-&amp;gt;GetTypeDescriptor() == description::GetTypeDescriptor&amp;lt;DescriptableObject&amp;gt;() &amp;amp;&amp;amp;
+                            method-&amp;gt;GetReturn()-&amp;gt;GetTypeDescriptor() != description::GetTypeDescriptor&amp;lt;void&amp;gt;() ) {
+                            symbol-&amp;gt;typeInfo = CopyTypeInfo(method-&amp;gt;GetReturn());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+FOREACH(Ptr&amp;lt;WfExpression&amp;gt;, argument, node-&amp;gt;arguments) {
+    int index = manager-&amp;gt;expressionResolvings.Keys().IndexOf(argument.Obj());
+    if (index == -1)  continue;
+    
+    auto type = manager-&amp;gt;expressionResolvings.Values()[index].type;
+    if ( types.Contains(type.Obj()))  continue;
+    
+    types.Add(type.Obj());
+
+    auto group = type-&amp;gt;GetTypeDescriptor()-&amp;gt;GetMethodGroupByName(L&amp;quot;CastResult&amp;quot;, true);
+    if  ( ! group ) continue;
+ 
+    int count = group-&amp;gt;GetMethodCount();
+    for (int i = 0; i &amp;lt; count; i++) { auto method = group-&amp;gt;GetMethod(i);
+        if (! method-&amp;gt;IsStatic()) continue;
+       
+        if ( method-&amp;gt;GetParameterCount() == 1 &amp;amp;&amp;amp;
+               method-&amp;gt;GetParameter(0)-&amp;gt;GetType()-&amp;gt;GetTypeDescriptor() == description::GetTypeDescriptor&amp;lt;DescriptableObject&amp;gt;() &amp;amp;&amp;amp;
+               method-&amp;gt;GetReturn()-&amp;gt;GetTypeDescriptor() != description::GetTypeDescriptor&amp;lt;void&amp;gt;() ) {
+            symbol-&amp;gt;typeInfo = CopyTypeInfo(method-&amp;gt;GetReturn());
+            break;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bool CopyMethodTypeInfo(auto &amp;amp;method, auto &amp;amp;group, auto &amp;amp;symbol) 
+{
+    if (! method-&amp;gt;IsStatic()) {
+        return true;
+    }
+    if ( method-&amp;gt;GetParameterCount() == 1 &amp;amp;&amp;amp;
+           method-&amp;gt;GetParameter(0)-&amp;gt;GetType()-&amp;gt;GetTypeDescriptor() == description::GetTypeDescriptor&amp;lt;DescriptableObject&amp;gt;() &amp;amp;&amp;amp;
+           method-&amp;gt;GetReturn()-&amp;gt;GetTypeDescriptor() != description::GetTypeDescriptor&amp;lt;void&amp;gt;() ) {
+        symbol-&amp;gt;typeInfo = CopyTypeInfo(method-&amp;gt;GetReturn());
+        return false;
+    }
+    return true;
+}
+
+void ExpressionResolvings(auto &amp;amp;manager, auto &amp;amp;argument, auto &amp;amp;symbol) 
+{
+    int index = manager-&amp;gt;expressionResolvings.Keys().IndexOf(argument.Obj());
+    if (index == -1) return;
+    
+    auto type = manager-&amp;gt;expressionResolvings.Values()[index].type;
+    if ( types.Contains(type.Obj())) return;
+
+    types.Add(type.Obj());
+    auto group = type-&amp;gt;GetTypeDescriptor()-&amp;gt;GetMethodGroupByName(L&amp;quot;CastResult&amp;quot;, true);
+    if  ( ! group ) return;
+
+    int count = group-&amp;gt;GetMethodCount();
+    for (int i = 0; i &amp;lt; count; i++) { auto method = group-&amp;gt;GetMethod(i);
+        if ( ! CopyMethodTypeInfo(method, group, symbol) ) break;
+    }
+}
+
+...
+...
+FOREACH(Ptr&amp;lt;WfExpression&amp;gt;, argument, node-&amp;gt;arguments) {
+    ExpressionResolvings(manager, arguments, symbol)
+}
+...
+...
+
+
+
+
+
+for(....) {
+    do_before_cond1()
+    if (cond1) {
+        do_before_cond2();
+        if (cond2) {
+            do_before_cond3();
+            if (cond3) {
+                do_something();
+            }
+            do_after_cond3();
+        }
+        do_after_cond2();
+    }
+    do_after_cond1();
+}
+
+for(....) {
+    do_before_cond1();
+    if ( !cond1 ) {
+        do_after_cond1();
+        continue
+    } 
+    do_after_cond1();
+
+    do_before_cond2();
+    if ( !cond2 ) { 
+        do_after_cond2();
+        continue;
+    }
+    do_after_cond2();
+
+    do_before_cond3();
+    if ( !cond3 ) {
+        do_after_cond3();
+        continue;
+    }
+    do_after_cond3();
+
+    do_something();  
+}
+
+
+for(....) {
+    do_before_cond1();
+    do_after_cond1();
+    if ( !cond1 ) continue;
+ 
+    do_before_cond2();
+    do_after_cond2();
+    if ( !cond2 ) continue;
+
+    do_before_cond3();
+    do_after_cond3();
+    if ( !cond3 ) continue;
+
+    do_something();  
+}
+
+
+
+for(....) {
+
+    do_before_cond1();
+    do_after_cond1();
+
+
+    if ( !cond1 ) continue;  // &amp;lt;-- cond1 成了是否做第二个语句块的条件
+    do_before_cond2();
+    do_after_cond2();
+
+    if ( !cond2 ) continue; // &amp;lt;-- cond2 成了是否做第三个语句块的条件
+    do_before_cond3();
+    do_after_cond3();
+
+    if ( !cond3 ) continue; //&amp;lt;-- cond3 成了是否做第四个语句块的条件
+    do_something(); 
+ 
+}
+
+
+
+bool do_func3() {
+   do_before_cond2();
+   do_after_cond2();
+   return cond3;
+}
+
+bool do_func2() {
+   do_before_cond2();
+   do_after_cond2();
+   return cond2;
+}
+
+bool do_func1() {
+   do_before_cond1();
+   do_after_cond1();
+   return cond1;
+}
+
+// for-loop 你可以重构成这样
+for (...) {
+    bool cond = do_func1();
+    if (cond) cond = do_func2();
+    if (cond) cond = do_func3();
+    if (cond) do_something();
+}
+
+// for-loop 也可以重构成这样
+for (...) {
+    if ( ! do_func1() ) continue;
+    if ( ! do_func2() ) continue;
+    if ( ! do_func3() ) continue;
+    do_something();
+}
+
+
+
+
+int ConnectPeer2Peer(Conn *pA, Conn* pB, Manager *manager)
+{
+    if ( pA-&amp;gt;isConnected() ) {
+        manager-&amp;gt;Prepare(pA);
+        if ( pB-&amp;gt;isConnected() ) {
+            manager-&amp;gt;Prepare(pB);
+            if ( manager-&amp;gt;ConnectTogther(pA, pB) ) {
+                pA-&amp;gt;Write(&amp;quot;connected&amp;quot;);
+                pB-&amp;gt;Write(&amp;quot;connected&amp;quot;);
+                return S_OK;
+            }else{
+                return S_ERROR;
+            }
+
+        }else {
+            pA-&amp;gt;Write(&amp;quot;Peer is not Ready, waiting...&amp;quot;);
+            return S_RETRY;
+        }
+    }else{
+        if ( pB-&amp;gt;isConnected() ) {
+            manager-&amp;gt;Prepare();
+            pB-&amp;gt;Write(&amp;quot;Peer is not Ready, waiting...&amp;quot;);
+            return S_RETRY;
+        }else{
+            pA-&amp;gt;Close();
+            pB-&amp;gt;Close();
+            return S_ERROR;
+        }
+    }
+    //Shouldn't be here!
+    return S_ERROR;
+}
+
+int ConnectPeer2Peer(Conn *pA, Conn* pB, Manager *manager)
+{
+    if ( pA-&amp;gt;isConnected() ) {
+        manager-&amp;gt;Prepare(pA);
+    }
+
+    if ( pB-&amp;gt;isConnected() ) {
+        manager-&amp;gt;Prepare(pB);
+    }
+
+    // pA = YES &amp;amp;&amp;amp; pB = NO
+    if (pA-&amp;gt;isConnected() &amp;amp;&amp;amp; ! pB-&amp;gt;isConnected()  ) {
+        pA-&amp;gt;Write(&amp;quot;Peer is not Ready, waiting&amp;quot;);
+        return S_RETRY;
+    // pA = NO &amp;amp;&amp;amp; pB = YES
+    }else if ( !pA-&amp;gt;isConnected() &amp;amp;&amp;amp; pB-&amp;gt;isConnected() ) {
+        pB-&amp;gt;Write(&amp;quot;Peer is not Ready, waiting&amp;quot;);
+        return S_RETRY;
+    // pA = YES &amp;amp;&amp;amp; pB = YES
+    }else if (pA-&amp;gt;isConnected() &amp;amp;&amp;amp; pB-&amp;gt;isConnected()  ) {
+        if ( ! manager-&amp;gt;ConnectTogther(pA, pB) ) {
+            return S_ERROR;
+        }
+        pA-&amp;gt;Write(&amp;quot;connected&amp;quot;);
+        pB-&amp;gt;Write(&amp;quot;connected&amp;quot;);
+        return S_OK;
+    }
+
+    // pA = NO, pB = NO
+    pA-&amp;gt;Close();
+    pB-&amp;gt;Close();
+    return S_ERROR;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>2</docid>
+    <title>AWS 的 S3 故障回顾和思考</title>
+    <link>http://coolshell.cn/articles/17737.html</link>
+    <description>继Gitlab的误删除数据事件没几天，“不沉航母” AWS S3 （Simple Storage Service）几天前也“沉”了4个小时，墙外的半个互联网也跟...</description>
+    <content>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>3</docid>
+    <title>从Gitlab误删除数据库想到的</title>
+    <link>http://coolshell.cn/articles/17680.html</link>
+    <description>昨天，Gitlab.com发生了一个大事，某同学误删了数据库，这个事看似是个低级错误，不过，因为Gitlab把整个过程的细节都全部暴露出来了，所以，可以看到很多...</description>
+    <content>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>4</docid>
+    <title>Chrome开发者工具的小技巧</title>
+    <link>http://coolshell.cn/articles/17634.html</link>
+    <description>Chrome的开发者工具是个很强大的东西，相信程序员们都不会陌生，不过有些小功能可能并不为大众所知，所以，写下这篇文章罗列一下可能你所不知道的功能，有的功能可能...</description>
+    <content>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+console.todo = function( msg){
+  console.log( '%c%s %s %s', 'font-size:20px; color:yellow; background-color: blue;', '--', msg, '--');
+}
+console.important = function( msg){
+  console.log( '%c%s %s %s', 'font-size:20px; color:brown; font-weight: bold; text-decoration: underline;', '--', msg, '--');
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var pets = [
+  { animal: 'Horse', name: 'Pony', age: 23 },
+  { animal: 'Dog', name: 'Snoopy', age: 13 },
+  { animal: 'Cat', name: 'Tom', age: 18 },
+  { animal: 'Mouse', name: 'Jerry', age: 12}
+];
+console.table(pets)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>5</docid>
+    <title>从 MongoDB “赎金事件” 看安全问题</title>
+    <link>http://coolshell.cn/articles/17607.html</link>
+    <description>今天上午（2017年1月7日），我的微信群中同时出现了两个MongoDB被黑掉要赎金的情况，于是在调查过程中，发现了这个事件。这个事件应该是2017年开年的第一...</description>
+    <content>
+
+
+{
+    "_id" : ObjectId("5859a0370b8e49f123fcc7da"),
+    "mail" : "harak1r1@sigaint.org",
+    "note" : "SEND 0.2 BTC TO THIS ADDRESS 13zaxGVjj9MNc2jyvDRhLyYpkCh323MsMq AND CONTACT THIS EMAIL WITH YOUR IP OF YOUR SERVER TO RECOVER YOUR DATABASE !"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>6</docid>
+    <title>技术人员的发展之路</title>
+    <link>http://coolshell.cn/articles/17583.html</link>
+    <description>2012年的时候写过一篇叫《程序算法与人生选择》的文章，我用算法来类比如何做选择，说白了就是怎么去计算，但是并没有讲程序员可以发展的方向有哪些。 所以，就算是有...</description>
+    <content>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>7</docid>
+    <title>如何读懂并写出装逼的函数式代码</title>
+    <link>http://coolshell.cn/articles/17524.html</link>
+    <description>今天在微博上看到了 有人分享了下面的这段函数式代码，我把代码贴到下面，不过我对原来的代码略有改动，对于函数式的版本，咋一看，的确令人非常费解，仔细看一下，你可能...</description>
+    <content>
+
+
+
+//正常的版本
+function find (x, y) {
+  for ( let i = 0; i &amp;lt; x.length; i++ ) {
+    if ( x[i] == y ) return i;
+  }
+  return null;
+}
+
+let arr = [0,1,2,3,4,5]
+console.log(find(arr, 2))
+console.log(find(arr, 8))
+
+//函数式的版本
+const find = ( f =&amp;gt; f(f) ) ( f =&amp;gt;
+  (next =&amp;gt; (x, y, i = 0) =&amp;gt;
+    ( i &amp;gt;= x.length) ?  null :
+      ( x[i] == y ) ? i :
+        next(x, y, i+1))((...args) =&amp;gt;
+          (f(f))(...args)))
+
+let arr = [0,1,2,3,4,5]
+console.log(find(arr, 2))
+console.log(find(arr, 8))
+
+
+
+
+
+(param1, param2, …, paramN) =&amp;gt; { statements } 
+(param1, param2, …, paramN) =&amp;gt; expression
+     // 等于 :  =&amp;gt; { return expression; } 
+
+// 只有一个参数时,括号才可以不加:
+(singleParam) =&amp;gt; { statements }
+singleParam =&amp;gt; { statements }
+
+//如果没有参数,就一定要加括号:
+() =&amp;gt; { statements }
+
+
+var simple = a =&amp;gt; a &amp;gt; 15 ? 15 : a; 
+simple(16); // 15
+simple(10); // 10
+
+let max = (a, b) =&amp;gt; a &amp;gt; b ? a : b;
+
+// Easy array filtering, mapping, ...
+
+var arr = [5, 6, 13, 0, 1, 18, 23];
+var sum = arr.reduce((a, b) =&amp;gt; a + b);  // 66
+var even = arr.filter(v =&amp;gt; v % 2 == 0); // [6, 0, 18]
+var double = arr.map(v =&amp;gt; v * 2);       // [10, 12, 26, 0, 2, 36, 46]
+
+function MakePowerFn(power) {
+  return function PowerFn(base) {
+    return Math.pow(base, power);
+  } 
+}
+
+power3 = MakePowerFn(3); //制造一个X的3次方的函数
+power2 = MakePowerFn(2); //制造一个X的2次方的函数
+
+console.log(power3(10)); //10的3次方 = 1000
+console.log(power2(10)); //10的2次方 = 100
+
+function MakePowerFn(power) {
+  return function(base) {
+    return Math.pow(base, power);
+  } 
+}
+
+MakePowerFn = power  =&amp;gt; {
+  return base =&amp;gt; {
+    return Math.pow(base, power);
+  } 
+}
+
+
+
+MakePowerFn = (power) =&amp;gt; (
+  (base) =&amp;gt; (Math.pow(base, power))
+)
+
+
+
+
+
+
+function fact(n){
+  return n==0 ? 1 :  n * fact(n-1);
+};
+result = fact(5);
+
+
+function combinator(func) {
+  func(func);
+}
+
+
+
+
+function fact(func, n) {
+  return n==0 ? 1 :  n * func(func, n-1);
+}
+
+fact(fact, 5); //输出120
+
+
+
+var fact = (func, n) =&amp;gt; ( n==0 ? 1 :  n * func(func, n-1) )
+fact(fact, 5)
+
+
+
+
+
+
+
+ 
+( (func, x) =&amp;gt; func(func, x) ) (  //函数体
+  (func, n) =&amp;gt; ( n==0 ? 1 :  n * func(func, n-1) ), //第一个调用参数
+  5 //第二调用参数
+); 
+
+
+
+HighOrderFact = function(func){
+  return function(n){
+    return n==0 ? 1 : n * func(func)(n-1);
+  };
+};
+
+fact = HighOrderFact(HighOrderFact);
+fact(5); 
+
+
+
+fact = function ( hifunc ) {
+  return hifunc ( hifunc );
+} (
+  //调用参数是一个函数
+  function (func) { 
+    return function(n){
+      return n==0 ? 1 : n * func(func)(n-1);
+    };
+  }
+);
+
+fact(5); //于是我们就可以直接使用了
+
+fact = (highfunc =&amp;gt; highfunc ( highfunc ) ) (
+  func =&amp;gt; n =&amp;gt;  n==0 ? 1 : n * func(func)(n-1)
+);
+
+
+
+//正常的版本
+function find (x, y) {
+  for ( let i = 0; i &amp;lt; x.length; i++ ) {
+    if ( x[i] == y ) return i;
+  }
+  return null;
+}
+
+function find (x, y, i=0) {
+  if ( i &amp;gt;= x.length ) return null;
+  if ( x[i] == y ) return i;
+  return find(x, y, i+1);
+}
+
+( (func, x, y, i) =&amp;gt; func(func, x, y, i) ) (  //函数体
+  (func, x, y, i=0) =&amp;gt; (
+      i &amp;gt;= x.length ?  null :
+         x[i] == y  ?  i : func (func, x, y, i+1)
+  ), //第一个调用参数
+  arr, //第二调用参数
+  2 //第三调用参数
+)
+
+const find = ( highfunc =&amp;gt; highfunc( highfunc ) ) (
+   func =&amp;gt; (x, y, i = 0) =&amp;gt; (
+     i &amp;gt;= x.length ?  null :
+           x[i] == y  ?  i : func (func) (x, y, i+1)
+   )
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>8</docid>
+    <title>什么是工程师文化？</title>
+    <link>http://coolshell.cn/articles/17497.html</link>
+    <description>四年前，我在QCon上演讲了一个《建一支强大的小团队》（整理后的PPT分享于这里）提到了工程师文化，今天，我想在这里再写一篇关于工程师文化的文章，一方面是因为我...</description>
+    <content>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>9</docid>
+    <title>关于高可用的系统</title>
+    <link>http://coolshell.cn/articles/17459.html</link>
+    <description>在《这多年来我一直在钻研的技术》这篇文章中，我讲述了一下，我这么多年来一直在关注的技术领域，其中我多次提到了工业级的软件，我还以为有很多人会问我怎么定义工业级？...</description>
+    <content>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>10</docid>
+    <title>这多年来我一直在钻研的技术</title>
+    <link>http://coolshell.cn/articles/17446.html</link>
+    <description>因为我是看到tinyfool 《那些年我赶过的时髦技术趋势》，在赞叹的时候，也让我对我有好些回忆，所以想写一篇回忆贴，本来觉得回忆是件挺让人沮喪的事，因为是老了...</description>
+    <content>
+
+
+
+
+
+，大三大四加在银行工作的两年。
+
+
+
+
+
+
+
+
+
+，这十年，我主要的编程语言是C/C++。
+
+
+
+
+
+
+，这个时间段，主要的编程语言是Java。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>11</docid>
+    <title>缓存更新的套路</title>
+    <link>http://coolshell.cn/articles/17416.html</link>
+    <description>看到好些人在写更新缓存数据代码时，先删除缓存，然后再更新数据库，而后续的操作会把数据再装载的缓存中。然而，这个是逻辑是错误的。试想，两个并发操作，一个是更新操作...</description>
+    <content>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>12</docid>
+    <title>为什么我不在微信公众号上写文章</title>
+    <link>http://coolshell.cn/articles/17391.html</link>
+    <description>很多朋友问我为什么不在微信公众号上写文章。我都没有直接回答，老实说，我也是扭扭捏捏的，才去开了个个人的微信的公众号，而且还只能搜索我博客这边的文章，我承认现在的...</description>
+    <content>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>13</docid>
+    <title>性能测试应该怎么做？</title>
+    <link>http://coolshell.cn/articles/17381.html</link>
+    <description>偶然间看到了阿里中间件Dubbo的性能测试报告，我觉得这份性能测试报告让人觉得做这性能测试的人根本不懂性能测试，我觉得这份报告会把大众带沟里去，所以，想写下这篇...</description>
+    <content>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>14</docid>
+    <title>让我们来谈谈分工</title>
+    <link>http://coolshell.cn/articles/17295.html</link>
+    <description>昨天，我看到一个新闻——雅虎取消了QA团队，工程师必须自己负责代码质量，并使用持续集成代替QA。 同时，也听到网友说，“听微软做数据库运维的工程师介绍，他们也是...</description>
+    <content>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
+
+<doc>
+    <docid>15</docid>
+    <title>Cuckoo Filter：设计与实现</title>
+    <link>http://coolshell.cn/articles/17225.html</link>
+    <description>（感谢网友 @我的上铺叫路遥 投稿） 对于海量数据处理业务，我们通常需要一个索引数据结构，用来帮助查询，快速判断数据记录是否存在，这种数据结构通常又叫过滤器(f...</description>
+    <content>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#define SECTOR_SIZE    (1 &amp;lt;&amp;lt; 10)
+#define DAT_LEN        (SECTOR_SIZE - 20)  /* minus sha1 size */
+
+/* The log entries store key-value pairs on flash and the
+ * size of each entry is assumed just one sector fit.
+ */
+struct log_entry {
+        uint8_t sha1[20];
+        uint8_t data[DAT_LEN];
+};
+
+
+
+
+enum { AVAILIBLE, OCCUPIED, DELETED, };
+
+/* The in-memory hash bucket cache is to filter keys (which is assumed SHA1) via
+ * cuckoo hashing function and map keys to log entries stored on flash.
+ */
+struct hash_slot_cache {
+        uint32_t tag : 30;  /* summary of key */
+        uint32_t status : 2;  /* FSM */
+        uint32_t offset;  /* offset on flash memory */
+};
+
+
+
+
+#define ASSOC_WAY  (4)  /* 4-way association */
+
+struct hash_table {
+    struct hash_slot_cache **buckets;
+    struct hash_slot_cache *slots;
+    uint32_t slot_num;
+    uint32_t bucket_num;
+};
+
+int cuckoo_filter_init(size_t size)
+{
+    ...
+    /* Allocate hash slots */
+    hash_table.slot_num = nvrom_size / SECTOR_SIZE;
+    /* Make rehashing happen */
+    hash_table.slot_num /= 4;
+    hash_table.slots = calloc(hash_table.slot_num, sizeof(struct hash_slot_cache));
+    if (hash_table.slots == NULL) {
+        return -1;
+    }
+
+    /* Allocate hash buckets associated with slots */
+    hash_table.bucket_num = hash_table.slot_num / ASSOC_WAY;
+    hash_table.buckets = malloc(hash_table.bucket_num * sizeof(struct hash_slot_cache *));
+    if (hash_table.buckets == NULL) {
+        free(hash_table.slots);
+        return -1;
+    }
+    for (i = 0; i &amp;lt; hash_table.bucket_num; i++) {
+        hash_table.buckets[i] = &amp;amp;hash_table.slots[i * ASSOC_WAY];
+    }
+}
+
+
+
+#define cuckoo_hash_lsb(key, count)  (((size_t *)(key))[0] &amp;amp; (count - 1))
+#define cuckoo_hash_msb(key, count)  (((size_t *)(key))[1] &amp;amp; (count - 1))
+
+
+static int cuckoo_hash_get(struct hash_table *table, uint8_t *key, uint8_t **read_addr)
+{
+    int i, j;
+    uint8_t *addr;
+    uint32_t tag[2], offset;
+    struct hash_slot_cache *slot;
+
+    tag[0] = cuckoo_hash_lsb(key, table-&amp;gt;bucket_num);
+    tag[1] = cuckoo_hash_msb(key, table-&amp;gt;bucket_num);
+
+    /* Filter the key and verify if it exists. */
+    slot = table-&amp;amp;gt;buckets[tag[0]];
+    for (i = 0; i bucket_num) == slot[i].tag) {
+        if (slot[i].status == OCCUPIED) {
+            offset = slot[i].offset;
+            addr = key_verify(key, offset);
+            if (addr != NULL) {
+                if (read_addr != NULL) {
+                    *read_addr = addr;
+                }
+                break;
+            }
+        } else if (slot[i].status == DELETED) {
+            return DELETED;
+        }
+    }
+    ...
+}
+
+static void cuckoo_hash_delete(struct hash_table *table, uint8_t *key)
+{
+    uint32_t i, j, tag[2];
+    struct hash_slot_cache *slot;
+
+    tag[0] = cuckoo_hash_lsb(key, table-&amp;gt;bucket_num);
+    tag[1] = cuckoo_hash_msb(key, table-&amp;gt;bucket_num);
+
+    slot = table-&amp;gt;buckets[tag[0]];
+    for (i = 0; i bucket_num) == slot[i].tag) {
+        slot[i].status = DELETED;
+        return;
+    }
+    ...
+}
+
+static int cuckoo_hash_collide(struct hash_table *table, uint32_t *tag, uint32_t *p_offset)
+{
+    int i, j, k, alt_cnt;
+    uint32_t old_tag[2], offset, old_offset;
+    struct hash_slot_cache *slot;
+
+    /* Kick out the old bucket and move it to the alternative bucket. */
+    offset = *p_offset;
+    slot = table-&amp;gt;buckets[tag[0]];
+    old_tag[0] = tag[0];
+    old_tag[1] = slot[0].tag;
+    old_offset = slot[0].offset;
+    slot[0].tag = tag[1];
+    slot[0].offset = offset;
+    i = 0 ^ 1;
+    k = 0;
+    alt_cnt = 0;
+
+KICK_OUT:
+    slot = table-&amp;gt;buckets[old_tag[i]];
+    for (j = 0; j &amp;lt; ASSOC_WAY; j++) {
+        if (offset == INVALID_OFFSET &amp;amp;&amp;amp; slot[j].status == DELETED) {
+            slot[j].status = OCCUPIED;
+            slot[j].tag = old_tag[i ^ 1];
+            *p_offset = offset = slot[j].offset;
+            break;
+        } else if (slot[j].status == AVAILIBLE) {
+            slot[j].status = OCCUPIED;
+            slot[j].tag = old_tag[i ^ 1];
+            slot[j].offset = old_offset;
+            break;
+        }
+    }
+
+    if (j == ASSOC_WAY) {
+        if (++alt_cnt &amp;gt; 512) {
+            if (k == ASSOC_WAY - 1) {
+                /* Hash table is almost full and needs to be resized */
+                return 1;
+            } else {
+                k++;
+            }
+        }
+        uint32_t tmp_tag = slot[k].tag;
+        uint32_t tmp_offset = slot[k].offset;
+        slot[k].tag = old_tag[i ^ 1];
+        slot[k].offset = old_offset;
+        old_tag[i ^ 1] = tmp_tag;
+        old_offset = tmp_offset;
+        i ^= 1;
+        goto KICK_OUT;
+    }
+
+    return 0;
+}
+
+static void cuckoo_rehash(struct hash_table *table)
+{
+    ...
+    uint8_t *read_addr = nvrom_base_addr;
+    uint32_t entries = log_entries;
+    while (entries--) {
+        uint8_t key[20];
+        uint32_t offset = read_addr - nvrom_base_addr;
+        for (i = 0; i &amp;amp;lt; 20; i++) {
+            key[i] = flash_read(read_addr);
+            read_addr++;
+        }
+        /* Duplicated keys in hash table which can cause eternal
+         * hashing collision! Be careful of that!
+         */
+        assert(!cuckoo_hash_put(table, key, &amp;amp;offset));
+        if (cuckoo_hash_get(&amp;amp;old_table, key, NULL) == DELETED) {
+            cuckoo_hash_delete(table, key);
+        }
+        read_addr += DAT_LEN;
+    }
+    ...
+}
+
+
+
+
+
+
+
+
+
+
+
+
+</content>
+</doc>
