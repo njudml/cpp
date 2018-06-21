@@ -34,3 +34,6 @@
 *.tar
 *.gz
 *.txt
+*.utf8
+*.dat
+*.xml
